@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BibleLessonAI Viewer</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>BibleLessonAI Viewer</h1>
+    <div class="status" id="connectionStatus">Loading projects...</div>
+  </header>
+
+  <main class="layout">
+    <aside class="project-list-panel">
+      <h2>Saved Projects</h2>
+      <p class="muted">Read-only viewer mode (showing all saved projects).</p>
+      <ul id="projectList" class="project-list"></ul>
+    </aside>
+
+    <section class="viewer-panel">
+      <div class="viewer-toolbar">
+        <div class="toolbar-group">
+          <label for="displayMode">Mode</label>
+          <select id="displayMode">
+            <option value="audience" selected>Audience</option>
+            <option value="presenter">Presenter</option>
+          </select>
+        </div>
+
+        <div class="toolbar-group">
+          <button id="prevBtn" type="button">Previous</button>
+          <button id="nextBtn" type="button">Next</button>
+        </div>
+
+        <div class="toolbar-group">
+          <button id="downloadBtn" type="button" disabled>Download PPTX</button>
+        </div>
+      </div>
+
+      <article id="slideCard" class="slide-card theme-1">
+        <header class="slide-header">
+          <div>
+            <p class="label">Main Topic</p>
+            <h3 id="mainTopic">Select a project</h3>
+          </div>
+          <div>
+            <p class="label">Lesson Date</p>
+            <h4 id="lessonDate">-</h4>
+          </div>
+        </header>
+
+        <section class="slide-body">
+          <span id="slideTypeBadge" class="badge">question</span>
+          <h2 id="slideQuestion">Project slides will appear here.</h2>
+          <p id="slideAnswer" class="answer"></p>
+          <p id="slideNotes" class="notes"></p>
+        </section>
+
+        <footer class="slide-footer">
+          <span id="slideCounter">Slide 0 / 0</span>
+        </footer>
+      </article>
+
+      <section id="presenterPanel" class="presenter-panel hidden">
+        <h3>Presenter Tools</h3>
+        <div class="presenter-grid">
+          <div>
+            <p class="label">Next Slide Preview</p>
+            <p id="nextPreview">-</p>
+          </div>
+          <div>
+            <p class="label">Slide Notes</p>
+            <p id="presenterNotes">-</p>
+          </div>
+          <div>
+            <p class="label">Timer</p>
+            <p id="timerDisplay">00:00</p>
+            <button id="timerToggleBtn" type="button">Start Timer</button>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./viewer.js"></script>
+</body>
+</html>
