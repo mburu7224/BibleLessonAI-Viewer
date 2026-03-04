@@ -10,7 +10,23 @@ import {
   setDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
-import { firebaseConfig, appSettings } from "./firebaseConfig.js";
+
+// Viewer-local config to avoid cross-file/module path issues on static hosting.
+const firebaseConfig = {
+  apiKey: "AIzaSyD_AnGX-RO7zfM_rCBopJmdv3BOVE4V-_o",
+  authDomain: "media-app-a702b.firebaseapp.com",
+  projectId: "media-app-a702b",
+  storageBucket: "media-app-a702b.firebasestorage.app",
+  messagingSenderId: "60484045851",
+  appId: "1:60484045851:web:f1bb588c2d5edc177ffcbe",
+  measurementId: "G-LPBXF7MLWF"
+};
+
+const appSettings = {
+  projectsCollection: "BibleLessonSlides",
+  liveCollection: "BibleLessonSlides",
+  defaultThemeId: 1
+};
 
 const TEST_ADMIN_KEY = "NewRuiruMediaKey2025!";
 
@@ -148,6 +164,7 @@ async function loadPublicProjects() {
     state.projects = [fallbackProject];
     const code = error?.code ? ` (${error.code})` : "";
     refs.connectionStatus.textContent = `Firestore unavailable${code}. Showing demo data.`;
+    showConnectionHints(error);
   }
 
   renderProjectList();
@@ -360,9 +377,42 @@ function bindGlobalErrorLogging() {
 
 function logFirebaseError(context, error) {
   console.error(`[Viewer][${context}]`, {
+    host: window.location.host,
+    origin: window.location.origin,
+    pathname: window.location.pathname,
+    projectId: firebaseConfig.projectId,
+    collection: appSettings.projectsCollection,
     code: error?.code,
     message: error?.message,
     stack: error?.stack,
     fullError: error
   });
+}
+
+function showConnectionHints(error) {
+  const code = error?.code || "";
+  if (code === "permission-denied") {
+    console.error(
+      "[Viewer][hint] Firestore rules denied reads. Ensure Firestore Rules allow read on /BibleLessonSlides/{document}."
+    );
+    return;
+  }
+
+  if (code === "failed-precondition") {
+    console.error(
+      "[Viewer][hint] Firestore index/precondition issue. Check Firebase console error link and create required index."
+    );
+    return;
+  }
+
+  if (String(error?.message || "").toLowerCase().includes("api key")) {
+    console.error(
+      "[Viewer][hint] API key restriction likely blocks this deployed domain. Add your GitHub Pages domain in Google Cloud API key HTTP referrers."
+    );
+    return;
+  }
+
+  console.error(
+    "[Viewer][hint] Check: deployed domain path, Firestore rules publish state, and App Check enforcement settings."
+  );
 }
