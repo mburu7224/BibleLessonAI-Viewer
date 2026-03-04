@@ -88,11 +88,10 @@ const refs = {
   downloadBtn: document.getElementById("downloadBtn"),
   slideCard: document.getElementById("slideCard"),
   mainTopic: document.getElementById("mainTopic"),
+  subtopicBlock: document.getElementById("subtopicBlock"),
+  subtopic: document.getElementById("subtopic"),
   lessonDate: document.getElementById("lessonDate"),
-  slideTypeBadge: document.getElementById("slideTypeBadge"),
-  slideQuestion: document.getElementById("slideQuestion"),
-  slideAnswer: document.getElementById("slideAnswer"),
-  slideNotes: document.getElementById("slideNotes"),
+  slideBody: document.getElementById("slideBody"),
   slideCounter: document.getElementById("slideCounter"),
   presenterPanel: document.getElementById("presenterPanel"),
   nextPreview: document.getElementById("nextPreview"),
@@ -217,21 +216,107 @@ function renderSlide() {
     notes: ""
   };
 
-  refs.mainTopic.textContent = state.project.mainTopic || "Untitled Topic";
-  refs.lessonDate.textContent = state.project.lessonDate || "No date";
-  refs.slideTypeBadge.textContent = slide.type || "note";
-  refs.slideQuestion.textContent = slide.question || "";
-  refs.slideAnswer.textContent = slide.answer || "";
-  refs.slideNotes.textContent = slide.notes || "";
+  const mainTopic = state.project.mainTopic || "Untitled Topic";
+  const lessonDate = state.project.lessonDate || "No date";
+  const subtopic = state.project.subtopic || "";
+
+  refs.mainTopic.textContent = mainTopic;
+  refs.subtopic.textContent = subtopic || "-";
+  refs.lessonDate.textContent = lessonDate;
+  refs.subtopicBlock.classList.toggle("subtopic-hidden", !subtopic);
+
   refs.slideCounter.textContent = `Slide ${Math.min(state.currentSlideIndex + 1, slides.length)} / ${slides.length}`;
 
   const themeId = slide.themeId || state.project.themeId || appSettings.defaultThemeId;
   refs.slideCard.className = `slide-card ${THEMES[themeId] || THEMES[1]}`;
+  refs.slideCard.classList.toggle("title-mode", slide.type === "title");
+  refs.slideBody.innerHTML = buildSlideBodyMarkup(slide, state.currentSlideIndex);
 
   refs.prevBtn.disabled = state.currentSlideIndex <= 0;
   refs.nextBtn.disabled = state.currentSlideIndex >= slides.length - 1;
 
   renderPresenterMeta();
+}
+
+function buildSlideBodyMarkup(slide, index) {
+  const type = slide.type || "question";
+
+  if (type === "title") {
+    return `
+      <div class="title-body">
+        <div>
+          <h1 class="title-topic">${escapeHtml(slide.question || state.project.mainTopic || "Untitled Topic")}</h1>
+          <p class="title-date">${escapeHtml(slide.answer || state.project.lessonDate || "No date")}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  if (type === "scriptureMemory") {
+    const scriptureReading = slide.scriptureReading || splitTwin(slide.answer).scripture || "";
+    const memoryVerse = slide.memoryVerse || splitTwin(slide.answer).memory || "";
+    return `
+      <div class="question-wrap">
+        <div class="question-number">SM</div>
+        <div class="question-box">
+          <span class="type-pill">SCRIPTURE + MEMORY</span>
+          <h2>Scripture Reading and Memory Verse</h2>
+        </div>
+      </div>
+      <div class="twin-grid">
+        ${scriptureReading ? `
+          <div class="info-box">
+            <strong>Scripture Reading</strong>
+            <p>${escapeHtml(scriptureReading)}</p>
+          </div>
+        ` : ""}
+        ${memoryVerse ? `
+          <div class="info-box">
+            <strong>Memory Verse</strong>
+            <p>${escapeHtml(memoryVerse)}</p>
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }
+
+  if (type === "note") {
+    return `
+      <div class="note-box">
+        <span class="type-pill">NOTE</span>
+        <p>${escapeHtml(slide.notes || "No note content.")}</p>
+      </div>
+    `;
+  }
+
+  const qNumber = slide.questionNumber ? `Q${slide.questionNumber}` : `Q${index + 1}`;
+  return `
+    <div class="question-wrap">
+      <div class="question-number">${escapeHtml(qNumber)}</div>
+      <div class="question-box">
+        <span class="type-pill">QUESTION</span>
+        <h2>${escapeHtml(slide.question || "No question")}</h2>
+      </div>
+    </div>
+    <div class="info-box">
+      <strong>Answer</strong>
+      <p>${escapeHtml(slide.answer || "No answer provided.")}</p>
+    </div>
+    ${slide.notes ? `
+      <div class="info-box">
+        <strong>Notes</strong>
+        <p>${escapeHtml(slide.notes)}</p>
+      </div>
+    ` : ""}
+  `;
+}
+
+function splitTwin(value = "") {
+  const parts = String(value).split("|").map((part) => part.trim()).filter(Boolean);
+  return {
+    scripture: parts[0] || "",
+    memory: parts[1] || ""
+  };
 }
 
 function renderPresenterMeta() {
