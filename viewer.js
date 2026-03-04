@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
 import {
   getFirestore,
   collection,
@@ -10,7 +10,7 @@ import {
   setDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-firestore.js";
-import { firebaseConfig, appSettings } from "../backend/firebaseConfig.js";
+import { firebaseConfig, appSettings } from "./firebaseConfig.js";
 
 const TEST_ADMIN_KEY = "NewRuiruMediaKey2025!";
 
@@ -85,15 +85,27 @@ const refs = {
   timerToggleBtn: document.getElementById("timerToggleBtn")
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
+const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
 initialize();
 
 async function initialize() {
-  bindEvents();
-  await loadPublicProjects();
-  applyModeUI();
+  bindGlobalErrorLogging();
+
+  try {
+    console.info("[Viewer] Booting", {
+      host: window.location.host,
+      path: window.location.pathname,
+      projectsCollection: appSettings.projectsCollection
+    });
+    bindEvents();
+    await loadPublicProjects();
+    applyModeUI();
+  } catch (error) {
+    logFirebaseError("initialize", error);
+    refs.connectionStatus.textContent = "Viewer failed to initialize. Check browser console logs.";
+  }
 }
 
 function bindEvents() {
@@ -132,9 +144,10 @@ async function loadPublicProjects() {
       refs.connectionStatus.textContent = `Loaded ${state.projects.length} saved project(s).`;
     }
   } catch (error) {
-    console.error("Failed to load projects", error);
+    logFirebaseError("loadPublicProjects", error);
     state.projects = [fallbackProject];
-    refs.connectionStatus.textContent = "Firestore unavailable. Showing demo data.";
+    const code = error?.code ? ` (${error.code})` : "";
+    refs.connectionStatus.textContent = `Firestore unavailable${code}. Showing demo data.`;
   }
 
   renderProjectList();
@@ -293,7 +306,7 @@ async function publishLiveSlideIndex() {
       { merge: true }
     );
   } catch (error) {
-    console.error("Failed to publish live index", error);
+    logFirebaseError("publishLiveSlideIndex", error);
   }
 }
 
@@ -333,4 +346,23 @@ function escapeHtml(value = "") {
     .replaceAll(">", "&gt;")
     .replaceAll("\"", "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function bindGlobalErrorLogging() {
+  window.addEventListener("error", (event) => {
+    console.error("[Viewer][window.error]", event.error || event.message || event);
+  });
+
+  window.addEventListener("unhandledrejection", (event) => {
+    console.error("[Viewer][unhandledrejection]", event.reason);
+  });
+}
+
+function logFirebaseError(context, error) {
+  console.error(`[Viewer][${context}]`, {
+    code: error?.code,
+    message: error?.message,
+    stack: error?.stack,
+    fullError: error
+  });
 }
